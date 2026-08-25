@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RM Invoice</title>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --panel: #ffffff;
+    --text: #000;
+    --border: blue;
+    --accent: green;
+    --header-border: green;
+    --subtotal-bg: #EDFFF2;
+    --table-head-bg: #d9e1f2;
+  }
+
+  body {
+    font-family: "Times", Arial, sans-serif;
+    color: var(--text);
+    padding: 2px;
+    transition: background 0.3s, color 0.3s;
+  }
+  .invoice-box {
+    background: var(--panel);
+    max-width: 800px;
+    margin: 0px auto 0;
+    padding: 4px 2px;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--header-border);
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+  }
+  .left-header { display: flex; align-items: center; }
+  .emoji-logo { font-size: 48px; margin-left: 18px; cursor: pointer; }
+  .company-info { text-align: left; margin-left: 8px; cursor: pointer; }
+  .company-info h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 1000;
+    color: red;
+  }
+  .company-info p {
+    margin: 2px 0;
+    font-size: 12px;
+    color: blue;
+    font-weight: 800;
+    line-height: 1.0;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .info-table td { padding: 0px 2px; }
+
+  .item-table td, .item-table th {
+    border: 1px solid var(--border);
+    padding: 2px 2px;
+  }
+  .info-table input {
+    font-size: 11px;
+    width: 70%;
+    border: none;
+    outline: none;
+    background: var(--panel);
+    border-bottom: .1px solid var(--accent);
+    color: var(--text);
+  }
+  .item-table th {
+    background: var(--table-head-bg);
+    font-weight: 900;
+    text-align: center;
+    color: red;
+    height: 20px;
+    border: 1.5px solid var(--border);
+  }
+  .item-table td { text-align: center; height: 20px; }
+
+  .add-row-cell {
+    padding: 0 !important; 
+    vertical-align: middle;
+    position: relative; 
+    text-align: center;
+  }
+  .add-row-sn {
+    display: block;
+    padding: 2px;
+  }
+  .add-row-btn {
+    background: linear-gradient(90deg, limegreen, green);
+    color: white;
+    border: none;
+    width: 80%;
+    height: 87%;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 3px;
+    box-sizing: border-box;
+    
+    /* Position over the S.N. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    /* Center the '+' sign */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  /* === End Modified CSS === */
+
+  .subtotal-row td {
+    font-weight: bold;
+    background: var(--subtotal-bg);
+    color: blue;
+    font-size: 12px;
+    border: 1.5px solid var(--border);
+  }
+  .subtotal-row #subTotal {
+    font-weight: 900;
+    font-size: 13px;
+    color: blue;
+  }
+
+  .amount-words {
+    text-align: left;
+    color: darkgreen;
+    font-weight: 400;
+    font-size: 6px;
+    padding-left: 8px;
+  }
+
+  .payment-summary {
+    margin-top: 10px;
+    text-align: right;
+    font-size: 12px;
+  }
+  .payment-summary input {
+    width: 80px;
+    text-align: right;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 3px;
+    font-size: 12px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .payment-summary span {
+    font-weight: bold;
+    margin-left: 10px;
+    color: darkgreen;
+  }
+
+  .btn-wrap { text-align: center; margin-top: 12px; }
+  button {
+    font-size: 12px;
+    padding: 0px 1px;
+    border: none;
+    border-radius: px;
+    cursor: pointer;
+    color: #fff;
+    margin: 0px;
+  }
+  /* REMOVED: .add-row class */
+
+  .print-btn { background: linear-gradient(90deg, #00c851, #007e33); }
+
+  .print-only {margin-top: 25px; padding-top: 10px; }
+  .print-only h4 { margin: 6px 0; color: darkgreen; font-size: 12px; }
+  .print-only p { margin: 2px 0; font-size: 9px; color: #333; }
+
+  .signature { 
+      position: absolute;
+      bottom: 0px;
+      right: 1px;
+      width: 80px;
+      text-align: center;
+      font-size: 8px;
+      color: blue;
+      line-height: 3;
+    }
+    .signature::before {
+      content: "✍  RM Robiur";
+      display: block;
+      border-top: 1px solid #333;
+    }
+  .menu-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 9999999999999999;
+  }
+  .menu-btn {
+    background:white;
+    color: green;
+    font-size: 16px;
+    border: none;
+    border-radius: 0px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .dropdown {
+    display: none;
+    position: absolute;
+    top: 35px;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    overflow: hidden;
+    min-width: 160px;
+  }
+  .dropdown button {
+    display: block;
+    width: 100%;
+    background: white;
+    color: darkgreen;
+    border: none;
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+  }
+  .dropdown button:hover { background: #f0f8f0; }
+  .dropdown button:last-child { border-bottom: none; }
+
+  /* Load List Modal */
+  #loadListBox {
+    display: none;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    padding: 10px;
+    width: 260px;
+    z-index: 1000;
+  }
+  #loadListBox h3 {
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: darkgreen;
+    text-align: center;
+  }
+  #loadList {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+  }
+  #loadList div {
+    padding: 6px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+  }
+  #loadList div:hover { background: #f0f8ff; }
+
+  @media print {
+    .menu-container { display: none; }
+    button, .store-btn, .bottom-taskbar { display: none; }
+    body { background: white; }
+    .invoice-box { margin: 40px }
+   .print-only { margin-top: 25px; padding-top: 10px; }
+   .print-only h4 { margin: 6px 0; color: darkgreen; font-size: 18px; }
+   .print-only p { margin: 2px 0; font-size: 15px; color: #333;
+   }
+.emoji-logo { font-size: 90px; margin-left: 8px; cursor: pointer; }
+    .company-info { margin-left: 20px }
+    .company-info h1 { font-size: 28px;}
+    .company-info p { font-size: 17px; font-weight: 800; line-height: 1.6;}
+   .info-table td { padding: 8px 10px; font-size: 16px;}
+   .item-table td, .item-table th {height: 30px; font-size: 16px;}
+ .add-row-btn { display: none; }
+    .signature {
+      display: block;
+      position: fixed;
+      bottom: 4px;
+      right: 20px;
+      width: 180px;
+      text-align: center;
+      font-size: 12px;
+      color: darkgreen;
+      line-height: 3;
+    }
+    .signature::before {
+      content: "Signature";
+      display: block;
+      border-top: 1px solid #333;
+      margin-bottom: 0px;
+    }
+  }
+
+  #settingsModal {
+    display: none;
+    position: fixed;
+    top: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    color: #000;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    width: 100px;
+    padding: 12px;
+    z-index: 99999999999999999999992000;
+  }
+  #settingsModal h3 {
+    text-align: center;
+    color: darkgreen;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  #settingsModal button {
+    width: 100%;
+    background: #f3fff3;
+    color: darkgreen;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 6px;
+    font-size: 13px;
+    padding: 6px;
+  }
+  #settingsModal select {
+    width: 100%;
+    padding: 4px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+
+<div class="menu-container">
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <div class="dropdown" id="dropdownMenu">
+    <button onclick="resetInvoice()">🧾 New</button>
+    <button onclick="saveInvoice()">💾 Save</button>
+    <button onclick="printInvoice()">📄 Print</button>
+    <button onclick="shareInvoice()">📤 Share</button>
+    <button onclick="loadInvoiceList()">📂 Load</button>
+    <button onclick="window.location.href ='https://rmrobiur.blogspot.com'">🛍 Store</button>
+ <button onclick="window.location.href='tel:9674644133'">📞 Contact</button>
+   <button onclick="openSettings()">⚙️ Settings</button>
+  </div>
+</div>
+
+<div id="settingsModal">
+  <h3>⚙️ Settings</h3>
+  <button onclick="toggleTheme()">🌓 Dark/Light</button>
+  <button onclick="changeFontSize(1)">🔼 Font + </button>
+  <button onclick="changeFontSize(-1)">🔽 Font - </button>
+  <label style="margin-top:6px;display:block;">🎨 Color:</label>
+  <select id="colorSelect" onchange="changeThemeColor(this.value)">
+    <option value="green" selected>Green</option>
+    <option value="blue">Blue</option>
+    <option value="red">Red</option>
+    <option value="purple">Purple</option>
+    <option value="orange">Orange</option>
+  </select>
+  <button style="background:red;color:white;" onclick="closeSettings()">Close</button>
+</div>
+
+<div id="loadListBox">
+  <h3>📂 Saved Invoices</h3>
+  <div id="loadList"></div>
+  <button onclick="document.getElementById('loadListBox').style.display='none'" style="margin-top:6px;background:red;padding:4px 10px;border:none;border-radius:6px;color:white;">Close</button>
+</div>
+
+<div class="invoice-box" id="invoiceBox">
+  <header>
+    <div class="left-header">
+      <div class="emoji-logo" onclick="window.location.href ='https://rmrobiur.blogspot.com'">📑</div>
+      <div class="company-info" onclick="window.location.href ='https://rmrobiur.blogspot.com'">
+        <h1>RM Skyline</h1>
+        <p>Uluberia, Howrah, West Bengal, India</p>
+        <p>WhatsApp Number: 9674644133</p>
+      </div>
+    </div>
+  </header>
+
+  <table class="info-table">
+    <tr>
+      <td><b>Name:</b> <input type="text" id="custName"></td>
+      <td><b>Bill No.:</b> <input type="text" id="billNo" value=""></td>
+    </tr>
+    <tr>
+      <td><b>Contact:</b> <input type="text" id="custContact"></td>
+      <td><b>Date:</b> <input type="date" id="billDate"></td>
+    </tr>
+    <tr>
+      <td colspan="2"><b>Address:</b> <input type="text" id="custAddr" style="width:80%;"></td>
+    </tr>
+  </table>
+
+  <br/>
+
+  <table class="item-table" id="itemTable">
+    <thead>
+      <tr>
+        <th>S.N</th>
+        <th>Item Name</th>
+        <th>Qty</th>
+        <th>Rate</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+        </tbody>
+    <tfoot>
+      <tr class="subtotal-row">
+        <td colspan="3" class="amount-words" id="totalWords" style="font-size:10px">(Zero Only)</td>
+        <td style="text-align:right;">Total</td>
+        <td id="subTotal">0.00</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="payment-summary">
+    <label><b>Paid:</b> ₹ <input type="number" id="paidAmount" value="" min="0" onchange="updateDue()"></label>
+    <span>🧾 Due Balance: ₹ <span id="dueBalance">0.00</span></span>
+  </div>
+
+  <div class="btn-wrap"></div> 
+
+  <div class="print-only">
+    <h4>Terms & Conditions:</h4>
+    <p>1. Goods once sold will not be taken back or exchanged.</p>
+    <p>2. Payment must be made within the due date mentioned.</p>
+    <p>3. Thank you for shopping with Mobarak Panjabi!</p>
+  </div>
+
+  <div class="signature"></div>
+</div>
+
+<script>
+  // 🌟 Dropdown Menu
+  function toggleMenu() {
+    const menu = document.getElementById("dropdownMenu");
+    menu.style.display = (menu.style.display === "block") ? "none" : "block";
+  }
+  document.addEventListener("click", e => {
+    const menu = document.getElementById("dropdownMenu");
+    const btn = document.querySelector(".menu-btn");
+    if (!menu.contains(e.target) && !btn.contains(e.target)) menu.style.display = "none";
+  });
+
+  // 🌟 Initialization
+  window.onload = function() {
+    for (let i = 0; i < 9; i++) addRow(); // Add 9 normal rows
+    createAddRowTrigger(); // Add the 10th row as the trigger
+    applySavedSettings();
+  };
+
+  // === NEW: Function to add a normal row ===
+  function addRow() {
+    const tableBody = document.getElementById("tableBody");
+    const rowCount = tableBody.rows.length + 1;
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+      <td>${rowCount}.</td>
+      <td><input type="text" style="width:95%;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);"></td>
+      <td><input type="number" min="0" value="" style="width:30px;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);" onchange="updateTotal()"></td>
+      <td><input type="number" min="0" value="" style="width:30px;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);" onchange="updateTotal()"></td>
+      <td class="amount">0.00</td>`;
+    tableBody.appendChild(newRow);
+  }
+
+  // === MODIFIED: Function to create the special "Add Row" trigger ===
+  function createAddRowTrigger() {
+    const tableBody = document.getElementById("tableBody");
+    const rowCount = tableBody.rows.length + 1; // Get the S.N. for this row
+    const newRow = document.createElement("tr");
+    newRow.id = "add-row-trigger";
+    newRow.innerHTML = `
+      <td class="add-row-cell">
+        <span class="add-row-sn">${rowCount}.</span>
+        <button class="add-row-btn" onclick="addNewRow()">+</button>
+      </td>
+      <td><input type="text" style="width:95%;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);"></td>
+      <td><input type="number" min="0" value="" style="width:30px;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);" onchange="updateTotal()"></td>
+      <td><input type="number" min="0" value="" style="width:30px;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);" onchange="updateTotal()"></td>
+      <td class="amount">0.00</td>`;
+    tableBody.appendChild(newRow);
+  }
+
+  // === NEW: Function called by the "+" button ===
+  function addNewRow() {
+    const tableBody = document.getElementById("tableBody");
+    const oldTriggerRow = document.getElementById("add-row-trigger");
+    const rowCount = tableBody.rows.length; // Get S.N before adding new row
+    
+    // Convert old trigger row to a normal row
+    oldTriggerRow.id = "";
+    const firstCell = oldTriggerRow.querySelector("td");
+    firstCell.innerHTML = `${rowCount}.`; // This replaces the span and button
+    firstCell.classList.remove("add-row-cell");
+    
+    // Add the new trigger row
+    createAddRowTrigger();
+    
+    // Update total to include the (now blank) row
+    updateTotal(); 
+  }
+
+  // 🌟 Update Totals
+  function updateTotal() {
+    let total = 0;
+    const rows = document.querySelectorAll("#itemTable tbody tr");
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll("input[type='number']");
+      const qty = parseFloat(inputs[0].value) || 0;
+      const rate = parseFloat(inputs[1].value) || 0;
+      const amount = qty * rate;
+      row.querySelector(".amount").innerText = amount.toFixed(2);
+      total += amount;
+    });
+    document.getElementById("subTotal").innerText = total.toFixed(2);
+    document.getElementById("totalWords").innerText = "(" + numberToWords(total) + " Only)";
+    updateDue();
+  }
+
+  function updateDue() {
+    const total = parseFloat(document.getElementById("subTotal").innerText) || 0;
+    const paid = parseFloat(document.getElementById("paidAmount").value) || 0;
+    const due = total - paid;
+    document.getElementById("dueBalance").innerText = due.toFixed(2);
+  }
+
+  function numberToWords(num) {
+    if (num === 0) return "Zero";
+    const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+    const b = ["", "", "Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+    const numToWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n/10)] + (n%10 ? " " + a[n%10] : "");
+      if (n < 1000) return a[Math.floor(n/100)] + " Hundred" + (n%100 ? " " + numToWords(n%100) : "");
+      if (n < 100000) return numToWords(Math.floor(n/1000)) + " Thousand" + (n%1000 ? " " + numToWords(n%1000) : "");
+      if (n < 10000000) return numToWords(Math.floor(n/100000)) + " Lakh" + (n%100000 ? " " + numToWords(n%100000) : "");
+      return numToWords(Math.floor(n/10000000)) + " Crore" + (n%10000000 ? " " + numToWords(n%10000000) : "");
+    };
+    return numToWords(Math.floor(num));
+  }
+
+  function printInvoice() { updateTotal(); window.print(); }
+
+  // === MODIFIED: Reset Invoice Function ===
+  function resetInvoice() {
+    document.querySelectorAll("input").forEach(i => i.value = "");
+    document.getElementById("subTotal").innerText = "0.00";
+    document.getElementById("totalWords").innerText = "(Zero Only)";
+    document.getElementById("dueBalance").innerText = "0.00";
+    document.getElementById("tableBody").innerHTML = "";
+    for (let i = 0; i < 9; i++) addRow(); // Add 9 normal rows
+    createAddRowTrigger(); // Add 10th row as trigger
+  }
+
+  // === MODIFIED: Save Invoice Function ===
+  function saveInvoice() {
+    updateTotal();
+    const data = {
+      custName: custName.value,
+      custContact: custContact.value,
+      custAddr: custAddr.value,
+      billNo: billNo.value,
+      billDate: billDate.value,
+      paidAmount: paidAmount.value,
+      items: []
+    };
+    document.querySelectorAll("#itemTable tbody tr").forEach(row=>{
+      // Don't save the trigger row
+      if (row.id === "add-row-trigger") return; 
+      
+      const c=row.querySelectorAll("input");
+      const name = c[0].value;
+      const qty = c[1].value;
+      const rate = c[2].value;
+      
+      // Only save if any data exists in the row
+      if (name || qty || rate) {
+        data.items.push({name:name,qty:qty,rate:rate});
+      }
+    });
+    let all=JSON.parse(localStorage.getItem("invoiceList"))||[];
+    all.push(data);
+    localStorage.setItem("invoiceList",JSON.stringify(all));
+    alert("💾 Invoice saved!");
+  }
+  
+  function loadInvoiceList() {
+    const dataList=JSON.parse(localStorage.getItem("invoiceList"))||[];
+    const box=loadListBox,listDiv=loadList;
+    listDiv.innerHTML="";
+    if(!dataList.length){listDiv.innerHTML="<p style='color:red;text-align:center;'>No saved invoices found!</p>";}
+    else dataList.forEach((inv,i)=>{
+      const div=document.createElement("div");
+      div.innerHTML=`#${inv.billNo||i+1} - ${inv.custName||"No Name"} (${inv.billDate||"No Date"})`;
+      div.onclick=()=>loadInvoice(i);
+      listDiv.appendChild(div);
+    });
+    box.style.display="block";
+  }
+
+  // === MODIFIED: Load Invoice Function ===
+  function loadInvoice(i){
+    const all=JSON.parse(localStorage.getItem("invoiceList"));
+    const d=all[i];
+    loadListBox.style.display="none";
+    custName.value=d.custName||"";
+    custContact.value=d.custContact||"";
+    custAddr.value=d.custAddr||"";
+    billNo.value=d.billNo||"";
+    billDate.value=d.billDate||"";
+    paidAmount.value=d.paidAmount||"0";
+    const tb=tableBody;tb.innerHTML="";
+    
+    d.items.forEach((it,j)=>{
+      // Only add rows that have content
+      if (it.name || it.qty || it.rate) {
+        const r=document.createElement("tr");
+        r.innerHTML=`<td>${j+1}.</td><td><input type="text" value="${it.name}" style="width:95%;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);"></td><td><input type="number" min="1" value="${it.qty}" style="width:30px;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);" onchange="updateTotal()"></td><td><input type="number" min="0" value="${it.rate}" style="width:30px;border:none;outline:none;font-size:11px;background:var(--panel);color:var(--text);" onchange="updateTotal()"></td><td class="amount">0.00</td>`;
+        tb.appendChild(r);
+      }
+    });
+    
+    // After loading items, add blank rows if needed, then the trigger
+    const minRows = 10;
+    let currentRows = tb.rows.length;
+    while (currentRows < (minRows - 1)) {
+        addRow(); // This will add normal rows
+        currentRows++;
+    }
+    createAddRowTrigger(); // Add the final trigger row
+        
+    updateTotal(); 
+    alert("📂 Invoice loaded successfully!");
+  }
+
+  // 🌟 Settings Panel
+  function openSettings(){ document.getElementById("settingsModal").style.display="block"; }
+  function closeSettings(){ document.getElementById("settingsModal").style.display="none"; }
+
+  // 🌟 Dark/Light Mode
+  function toggleTheme(){
+    let dark=document.body.dataset.theme==="dark";
+    if(dark){ document.body.dataset.theme="light"; setLightTheme(); localStorage.setItem("theme","light"); }
+    else{ document.body.dataset.theme="dark"; setDarkTheme(); localStorage.setItem("theme","dark"); }
+  }
+  function setDarkTheme(){
+    document.documentElement.style.setProperty("--bg","#111");
+    document.documentElement.style.setProperty("--panel","#222");
+    document.documentElement.style.setProperty("--text","#eee");
+    document.documentElement.style.setProperty("--border","#555");
+    document.documentElement.style.setProperty("--table-head-bg","#333");
+    document.documentElement.style.setProperty("--subtotal-bg","#222");
+  }
+  function setLightTheme(){
+    document.documentElement.style.setProperty("--bg","#f5f7fa");
+    document.documentElement.style.setProperty("--panel","#fff");
+    document.documentElement.style.setProperty("--text","#000");
+    document.documentElement.style.setProperty("--border","blue");
+    document.documentElement.style.setProperty("--table-head-bg","#d9e1f2");
+    document.documentElement.style.setProperty("--subtotal-bg","#EDFFF2");
+  }
+
+  // 🌟 Font Size Control
+  function changeFontSize(delta){
+    let current=parseFloat(localStorage.getItem("fontScale")||"1");
+    current+=delta*0.1;
+    if(current<0.8)current=0.8; if(current>1.5)current=1.5;
+    document.body.style.fontSize=current+"em";
+    localStorage.setItem("fontScale",current);
+  }
+
+  // 🌟 Invoice Color Theme
+  function changeThemeColor(color){
+    let c=color.toLowerCase();
+    document.documentElement.style.setProperty("--accent",c);
+    document.documentElement.style.setProperty("--header-border",c);
+document.documentElement.style.setProperty("--border",c);
+    localStorage.setItem("themeColor",c);
+  }
+
+  // 🌟 Apply Saved Settings
+  function applySavedSettings(){
+    const t=localStorage.getItem("theme");
+    const c=localStorage.getItem("themeColor");
+    const s=parseFloat(localStorage.getItem("fontScale"));
+    if(t==="dark")setDarkTheme();
+    if(c)changeThemeColor(c);
+    if(s)document.body.style.fontSize=s+"em";
+  }
+
+  // 🌟 Share Invoice as Image
+  async function shareInvoice() {
+    updateTotal();
+    const invoiceBox=document.getElementById("invoiceBox");
+    const clone=invoiceBox.cloneNode(true);
+    
+    // Hide trigger row in shared image
+    const triggerRow = clone.querySelector("#add-row-trigger");
+    if(triggerRow) triggerRow.style.display = "none";
+    
+    const inputs=clone.querySelectorAll("input");
+    inputs.forEach(inp=>{
+      const span=document.createElement("span");
+      span.textContent=inp.value||"";
+      span.style.fontSize=window.getComputedStyle(inp).fontSize;
+      span.style.fontWeight="500";
+      span.style.color="#000";
+      span.style.borderBottom="1px solid #ccc";
+      span.style.display="inline-block";
+      span.style.minWidth=inp.offsetWidth+"px";
+      inp.replaceWith(span);
+    });
+    const temp=document.createElement("div");
+    temp.style.position="absolute";temp.style.left="-9999px";
+    temp.appendChild(clone);document.body.appendChild(temp);
+    const canvas=await html2canvas(clone,{scale:2,backgroundColor:"#fff"});
+    document.body.removeChild(temp);
+    const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
+    const file=new File([blob],"invoice.png",{type:"image/png"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({title:"Mobarak Panjabi Invoice",text:"Here’s your invoice.",files:[file]});
+    }else{
+      const link=document.createElement("a");
+      link.href=URL.URL.createObjectURL(blob);
+      link.download="invoice.png";
+      link.click();
+      alert("📸 Image saved (sharing not supported on this device).");
+    }
+  }
+</script>
+</body>
+<div class="bottom-taskbar">
+    <div class="taskbar-left">
+        <img id="startBtn" src="https://img.webme.com/pic/r/robiur/windows_logos_PNG28-picsay%20(1).png" alt="🏠" />
+    </div>
+
+    <div class="taskbar-center" style="font-size:25px;">
+        <a href="#" data-target="facebookWindow" class="app-link" aria-label="Facebook" >📋</a>
+        <a href="#" data-target="whatsappWindow" class="app-link" aria-label="WhatsApp">💬</a>
+        <a href="#" data-target="browserWindow" class="app-link" aria-label="Browser">🌎</a>
+        <a href="#" data-target="chatWindow" class="app-link" aria-label="Chat">🌐</a>
+        <a href="#" data-target="callWindow" class="app-link" aria-label="Call">💿</a>
+     <a style="font-size:14px;color:white" id="menuToggle" onclick="toggleMenu()">❉</a> 
+    </div>
+<div class="taskbar-separator"></div>
+    <div class="taskbar-right">
+        <o id="bellIcon">⚑</o>
+  <div class="taskbar-separator"></div>
+        <o id="toolsIcon">∆</o> 
+        <div id="taskbarClock"></div>
+    </div>
+</div>
+
+<div class="start-menu" id="startMenu">
+    <div class="start-left">
+        <a href="/">🖥 Home</a>
+        <a href="https://rmrobiur.blogspot.com/p/store.html">📁 Store</a>
+        <a href="#">📰 News</a>
+        <a href="#">🎶 Music</a>
+        <a href="https://rmrobiur.blogspot.com/p/elma-tune.html">🎥 Elma Tune</a>
+        <a href="#">🖼️ Gallery</a>
+        <a href="#">⚙ Trending</a>
+        <a href="#">🌐 World</a>
+        <a href="#">📧 Email</a>
+  <a id="menuPoppToggle"  onclick="opennavv()">📄 Others &nbsp;▼</a>
+<div id="menuPopp" style= "background: #E7E7E7; margin-left: 5px;">
+    <a href="#">📝&nbsp;New Post</a>
+    <a href="#">🌍&nbsp;Topics</a>
+    <a href="#">📡&nbsp;Articles</a>
+</div>
+       <a href="/">🖥 Home</a>
+        <a href="#">📁 Articles</a>
+        <a href="#">📰 News</a>
+        <a href="#">🎶 Music</a>
+        <a href="#">🎥 Videos</a>
+        <a href="#">🖼️ Gallery</a>
+        <a href="#">⚙ Trending</a>
+        <a href="#">🌐 World</a>
+        <a href="#">📧 Email</a>
+
+        <div class="start-search-bar">
+            <input type="text" id="startSearchInput" placeholder="Search....... ↵" />
+        </div>
+    </div>
+    <div class="start-right">
+      <div>
+            <span class="bh-user-btn" id="bhOpenBtn" aria-controls="bhDrawer" aria-expanded="false"><img class="profile-img" src="https://img.webme.com/pic/r/robiur/rmrobiur%20icon.png" alt="👤" /></span>  
+            <a href="#">👤 User</a>
+<a href="#" class="openPagePopup">📄 Pages</a>
+
+            <a href="#">📂 My Posts</a>
+            <a href="#">🖼 Pictures</a>
+<br />
+<div class="slider-container">
+        <label for="ZoomSlider">🔍
+            <span>Zoom</span></label>
+        <input type="range" id="ZoomSlider" min="0" max="100" value="40" />
+    </div><br />
+            <a href="#">⚙️ Settings</a>
+            <a href="#">❓ Help</a>
+        </div>
+        <div>
+            <a id="menuPopupToggle" class="home-button-special" onclick="opennavv()">📄 Menu &nbsp;▼</a>
+        </div>
+    </div>
+</div>
+
+
+<div class="menu-popup" id="menuPopup">
+    <a href="#">📝 New Post</a>
+    <a href="#">🌍 Social</a>
+    <a href="#">❌ Exit</a>
+</div>
+<div class="calendar-popup" id="calendarPopup">
+    <div class="calendar-header" id="calendarHeader"></div>
+    <div class="calendar-body" id="calendarBody"></div>
+</div>
+
+<div class="bell-popup" id="bellPopup">
+    <a href="#">🔔 New Articles</a>
+    <a href="#">📩 Top Posts (2)</a>
+    <a href="#">⚠️ Trendings!</a>
+    <a href="#">⚙️  Latest Writings</a>
+</div>
+
+<div class="tools-popup" id="toolsPopup">
+    <div class="tools-popup-header">
+        <span>Tools</span>
+        <a href="#">Links</a>
+    </div>
+    <div class="tools-grid">
+        <div class="grid-item active">
+            <span class="icon">📚</span>
+            <span>Poetry</span>
+        </div>
+        <div class="grid-item">
+            <span class="icon">🕋</span>
+            <span>Religious</span>
+        </div>
+        <div class="grid-item">
+            <span class="icon">🎵</span>
+            <span>Songs</span>
+        </div>
+        <div class="grid-item">
+            <span class="icon" onclick="openNavv()">🌍</span>
+            <span>World</span>
+        </div>
+        <div class="grid-item">
+            <span class="icon">👤</span>
+            <span>Profile</span>
+        </div>
+        <div class="grid-item active">
+            <span class="icon">📍</span>
+            <span>Location</span>
+        </div>
+        <div class="grid-item active">
+            <span class="icon">🔍</span>
+            <span>Search</span>
+        </div>
+ <div class="grid-item">
+            <span class="icon">💻</span>
+            <span>Articles</span>
+        </div>
+    </div>
+    <div class="slider-container">
+        <label for="FontSlider">
+‌🇦
+            <span>Font</span>
+        </label>
+        <input type="range" id="FontSlider" min="0" max="100" value="50" />
+    </div>
+    <div class="slider-container">
+        <label for="ZoomSlider">
+🔍
+            <span>Zoom</span>
+        </label>
+        <input type="range" id="ZoomSlider" min="0" max="100" value="75" />
+    </div>
+</div>
+    <div class="app-window" id="facebookWindow">
+    <div class="window-header">
+        <span>📋 New Posts</span>
+        <div class="window-controls">
+            <button title="Minimize" onclick="this.closest('.app-window').style.display='none'">—</button>
+            <button title="Maximize" class="maximize-btn" onclick="maximizeWindow(this)">☐</button>
+            <button class="close-btn" title="Close" onclick="this.closest('.app-window').style.display='none'">X</button>
+        </div>
+    </div>
+    <div class="window-body" style= "text-align: justify;">
+<h3>সূর্য কখনো অন্ধকারের পেছন ধাওয়া করে না। </h3>
+<div class="recent-label-posts" aria-label="Recent posts for label Religious">
+  <div id="rlp-scroll" class="rlp-scroll"></div>
+
+ </div>
+
+<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZRMGKcwtI1CGUJvTEsF2OcCLfmAhGHTSlzJfeX4lba8yOYmG1fCFeoWQwzi3CCuKQHdp27P1S1V_emJHi_VmeY_OBY1h6eorHBEzLiMVWS8SkXkZ1y2Z48rZF1RzwsjTinZUU22mBRYooufJJ9ryJyP5n9Uyt90xdAJiNEEPb37RVJluUvGfVEDSXOGxp/s1600/summer-beautiful-hd-background-picsay.jpg"/>
+        <p>  যখন চারিদিকে অন্ধকারাচ্ছন্ন। উত্তর, দক্ষিণ, পূর্ব, পশ্চিম; সর্বদিকেই অন্ধকার আর অন্ধকার। অন্ধকার মাথা উঁচু করে দাপিয়ে বেড়ায়। অন্ধকার মনে করে যে, আমি সবচেয়ে উত্তম, আমি সর্ব জায়গায় বিরাজমান, আমি সর্বশক্তিমান। </p>
+
+    <p> দীর্ঘক্ষন এই অবস্থা চলতে থাকে। হঠাৎ করে পূর্ব দিকে সূর্যের উদয় হয়। এটা সূর্যের নিজস্ব আইন; প্রতিদিন উঠে, প্রতিদিন অস্ত যায়। সূর্য ওঠার পথে কিছুই বাধা থাকে না। সূর্য অস্ত যাওয়ার পথেও কিছু বাধা থাকে না। সূর্য যতই উজ্জ্বল হতে থাকে, অন্ধকার ততই দূরীভূত হয়ে যায়। পৃথিবীর সর্বত্র বিরাজমান হয়ে যায়। সূর্য কখনো ভাবে না যে, অন্ধকারকে আমি তাড়িয়ে দেই। বরং সূর্য জানে যে আমার উদয়ই অন্ধকারের পরাজয়। এজন্যই অন্ধকারে চেয়ে আলো বেশি শক্তিশালী।</p>
+
+   <p><strong>  আমাদের ক্ষেত্রে ঠিক এমনটিই ঘটে থাকে। </strong></p>
+
+<p>সমাজে যখন অন্ধকার, অন্যায়, অবিচার ঘটতে থাকে; তখন অন্যায়কারীরা ভেবে থাকে যে, তারাই শক্তিশালী। তারা সর্বত্র বিরাজমান, তাদের উপরে আর কেউ নেয়। আর বাস্তবে সেটাই হয়ে থাকে। কারণ সমাজের সূর্যেরা ভাবে যে, অন্ধকার চলে গেলে তবেই আমি উদীত হব। সেজন্যই সূর্য স্বরূপ মানুষরা কখনো নিজেদেরকে প্রকাশ করতে পারে না।</p> 
+
+       বস্তুত যারা ন্যায়পন্থী, সৎকর্মশীল, ধৈর্যশীল এবং যারা নিজেরা ভাল কাজ করে এবং অপরকে ভালো কাজের উপদেশ দেয়, তারা হচ্ছে সূর্য স্বরূপ। তাদের আগমনই সমাজ থেকে অন্ধকার, অনাচার, অন্যায়, জুলুম প্রভৃতি কু-কর্ম ও সমাজবিরোধী কার্যকলাপ দূরীভূত করতে পারে। তাই সত্যপন্থীদের উচিত নিজেদের উজ্জলতা আরো বাড়ানো। নিজেদের চরিত্র, ব্যবহার, কথাবার্তা, আচরণ এবং সর্বদিক থেকে নিজেকে আরো আরো উন্নত করা। তারা নিজের চরিত্রকে যতই উজ্জ্বল করবে, সমাজ থেকে অন্যায় ততই দূরে সরে যাবে।
+
+      <p> সুতরাং এ কথা ভাবা ভুল যে, প্রথমে অন্যায় দূরীভূত করা হোক; তারপর আমরা নিজেদেরকে সঠিকভাবে গড়ে তুলবো। বরং বাস্তব এবং যুক্তিসঙ্গত কথা হল এই যে, প্রথমেই আমরা নিজেদের মধ্যে উন্নত চরিত্র, জ্ঞান ও গুণের সম্মিলনে সম্মোহনী ব্যক্তিত্ব গড়ে তুলবো; যার ফলে সমাজ থেকে অন্যায়কারী এবং কুকর্মশীল ব্যাক্তিদের প্রভাব ধীরে ধীরে ক্ষীন হতে বাধ্য। এটাই হচ্ছে পৃথিবীর আইন। সূর্য আমাদের এটাই শিখিয়ে থাকে।</p>
+
+       <p>সমাজের প্রতিটি সৎকর্মশীলদের প্রতি আমার সনির্বন্ধ অনুরোধ এই যে, আপনারা নিজেদের জ্ঞান ও গুণের বিকাশ ও উন্নতি না করে কখনও অন্যায় দূরীভূত করার জন্য সর্বস্ব দিয়ে প্রচেষ্টা চালাবেন না। কারণ অন্যায় কিংবা কুকর্ম দূরীভূত করার আগে নিজের ব্যক্তিত্বের মধ্যে ন্যায়, সুবিচার, সৎকর্ম, ধৈর্যশীলতা, আত্মসংযম, পরোপকারিতা, সময়ানুবর্তিতা, মানুষের প্রতি সম্মান, পিতা-মাতার আনুগত্য, স্রষ্ঠার আনুগত্য প্রভৃতি গুণগুলো অর্জন করা।</p>
+
+    <p><strong>  আশা করি আমরা সকলে নিজেদের ব্যক্তিত্ব, গুন ও চরিত্র গঠনের মাধ্যমে সমাজ থেকে অন্যায়কে বিতাড়িত করতে পারব। </strong></p>
+     
+        <hr />
+        <p style="font-size:12px;">আল্লাহ আমাদের এই কাজে সাহায্য করুক।
+                ।।  আমিন  ।।</p><hr />
+<ul>
+            <li>Chat List</li>
+            <li>New Message</li>
+            <li>Settings</li>
+        </ul>
+    </div>
+</div>
+
+
+
+<div class="app-window" id="whatsappWindow" style="left: 7%; top: 18%; 3px solid transparent; background-image: 
+linear-gradient(#f0f0f0, #f0f0f0), 
+linear-gradient(to right,royalblue, red);"> 
+    <div class="window-header" style= "background: linear-gradient(to right, royalblue, red)">  
+        <span>💬 Contact Us</span>
+        <div class="window-controls">
+            <button title="Minimize" onclick="this.closest('.app-window').style.display='none'">—</button>
+            <button title="Maximize" class="maximize-btn" onclick="maximizeWindow(this)">☐</button>
+            <button class="close-btn" title="Close" onclick="this.closest('.app-window').style.display='none'">X</button>
+        </div>
+    </div>
+    <div class="window-body">
+        <h2>Send Messages</h2>
+        <p>Simulating an application interface for WhatsApp. এই উইন্ডোটিও ঠিক Facebook উইন্ডোর **উপরে একই স্থানে** খুলবে। আপনি এটিকে টেনে সরিয়ে অন্য জায়গায় রাখতে পারেন।</p>
+<img id="startBtn" src="https://img.webme.com/pic/r/robiur/windows_logos_PNG28-picsay%20(1).png"/>
+        <ul>
+            <li>Chat List</li>
+            <li>New Message</li>
+            <li>Settings</li>
+        </ul>
+    </div>
+</div>
+
+<div class="app-window" id="browserWindow" style="left: 6%; top: 17%; border: 3px solid transparent; background-image: 
+        linear-gradient(#f0f0f0, #f0f0f0),
+        linear-gradient(to right, green, blue);"> 
+    <div class="window-header" style= "background: linear-gradient(to right, green, blue)">  
+        <span>🌼  &nbsp;Poetry</span>
+        <div class="window-controls">
+            <button title="Minimize" onclick="this.closest('.app-window').style.display='none'">—</button>
+            <button title="Maximize" class="maximize-btn" onclick="maximizeWindow(this)">☐</button>
+            <button class="close-btn" title="Close" onclick="this.closest('.app-window').style.display='none'">X</button>
+        </div>
+    </div>
+    <div class="window-body">
+        <h3>ঈসলামী কবিতা</h3>
+        <p>শোন হে মুসলমান, <br />
+রয়েছে তোমার সেই স্রষ্টায় ঈমান; <br /><br />
+
+যিনি সত্য-সাম্য-ন্যায়ের প্রতীক,<br />
+মানুষকে দিয়েছে জ্ঞান যা সঠিক। <br /><br />
+
+জালেমের প্রতি তিনি সদা আপোষহীন, <br />
+মজলুমে তিনি চির সহায়ক, নয় পরাধীন। <br /><br />
+
+তবে কেন তুমি হস্ত মিলায়ে<br />
+রয়েছ জালেমে, রেখেছ হৃদয়ে? <br /><br />
+
+দেখিতে কি পাওনা সেই সব মানুষেরে<br />
+যারা কাঁদিছে ক্ষুধায়, তব ত্রাণের তরে। <br /><br />
+
+নিও বুকে তুলে মজলুম নিপীড়িত জনে,<br />
+ধর খড়গ জালেমের অসাড় নিষ্ঠুর মনে।<br /><br /> 
+
+এসো, ভুলে যায় হিংসা-বিভেদ, <br />
+গড়ব এদেশ সুগঠিত, অভেদ। </p>
+<hr />
+
+<ul>
+            <li>New Poem</li>
+            <li>Islamic Song</li>
+            <li>কবিতা</li>
+        </ul>
+    </div>
+</div>
+
+<div class="app-window" id="chatWindow" style="left: 4%; top: 16%;">
+    <div class="window-header">
+        <span>🎤   Quotes</span>
+        <div class="window-controls">
+            <button title="Minimize" onclick="this.closest('.app-window').style.display='none'">—</button>
+            <button title="Maximize" class="maximize-btn" onclick="maximizeWindow(this)">☐</button>
+            <button class="close-btn" title="Close" onclick="this.closest('.app-window').style.display='none'">X</button>
+        </div>
+    </div>
+    <div class="window-body">
+        <h3>Inspirational Quote Of Nelson Mandela</h3>
+        <p>       "I Have a Dream" is a very eloquent speech by Martin Luther King Jr. It is a 17-minute public speech delivered on August 28, 1963, in which King called for racial equality and an end to discrimination. The speech was ranked the top American speech of the 20th century by a 1999 poll of scholars of public address.</p><hr />
+<p><strong>
+☞ Here is an extract of the speech:</strong></p>
+
+        <p>''I have a dream that one day this nation will rise up and live out the true meaning of its creed: "We hold these truths to be self-evident, that all men are created equal."</p>
+
+      <p>I have a dream that one day on the red hills of Georgia, the sons of former slaves and the sons of former slave owners will be able to sit down together at the table of brotherhood.</p>
+
+     <p> I have a dream that one day even the state of Mississippi, a state sweltering with the heat of injustice, sweltering with the heat of oppression, will be transformed into an oasis of freedom and justice.</p><br />
+
+     I have a dream that my four little children will one day live in a nation where they will not be judged by the color of their skin but by the content of their character.<br />
+
+      <p><b>I have a dream today!</b></p>
+    </div>
+</div>
+
+<div class="app-window" id="callWindow" style="left: 7%; top: 17%; 3px solid transparent; background-image: 
+linear-gradient(#f0f0f0, #f0f0f0), 
+linear-gradient(to right,red, blue);">
+    <div class="window-header" style= "background: linear-gradient(to right, red, blue);">
+        <span>📃&nbsp;&nbsp;Articles</span>
+        <div class="window-controls">
+            <button title="Minimize" onclick="this.closest('.app-window').style.display='none'">⚊</button>
+            <button title="Maximize" class="maximize-btn" onclick="maximizeWindow(this)">⚀</button>
+            <button class="close-btn" title="Close" onclick="this.closest('.app-window').style.display='none'">X</button>
+        </div>
+    </div>
+    <div class="window-body">
+        <h3>পৃথিবীর সর্বত্রই সত্য বিরাজমান।</h3>
+        <p>সত্যের কোন নির্দিষ্ট দিন-কাল-পাত্র হয় না। পৃথিবী এবং তার মধ্যকার সমস্ত সৃষ্টিজগৎ সত্যের সাক্ষ্য বহন করে। মহান সৃষ্টিকর্তা মানুষের মধ্যে সত্য ও মিথ্যা পার্থক্য করার ক্ষমতা দিয়েছেন। তাই প্রতিটি মানুষই কিছুটা ভালো এবং কিছুটা মন্দ নিয়েই জীবন অতিবাহিত করছেন। যাদের মধ্যে মন্দের ভাগ বেশি, আমরা তাদেরকে খারাপ হিসাবেই চিনি; এবং যাদের মধ্যে ভালোর অংশ বেশি, তাদেরকে আমরা ভালো হিসেবেই পরিগণিত করি। </p>
+
+     <p> সুতরাং যুক্তি এটারই সাক্ষ্য বহন করে যে, মন্দ ব্যক্তিদের মধ্যেও ভালো কিছু থাকে এবং ভাল ব্যক্তিদের মধ্যেও মন্দ কিছু থাকে। শুধুমাত্র এরই কারণে একজন ব্যক্তিকে ভালো এবং অপরকে খারাপ অভিহিত করা যায় না। তাই আমাদের উচিত প্রত্যেকের মধ্য থেকে ভালো জিনিসটি গ্রহণ করা এবং তাদের মন্দ জিনিস গুলো এড়িয়ে যাওয়া। তবেই আমরা ভালো জিনিসটি অর্জন করতে পারব। </p>
+
+    <p>  কিন্তু বর্তমানে এটা খুবই পরিলক্ষিত হয় যে, মানুষ অন্য ব্যক্তির কিছু খারাপ ব্যবহারের কারণে তার সমস্ত ভালো কাজ অস্বীকার করে থাকে। এর জন্যই পরস্পরের মধ্যে দূরত্বভাব সৃষ্টি করে। ভালো লোকেরা একত্রিত হতে পারেন না। মন্দ লোকেরাই সমস্ত ক্ষমতার অধিকারী হয়ে যায়। </p>
+
+     <p>  তাই আমার মতে আমাদের আরো বেশি বেশি উদার হওয়া প্রয়োজন। প্রত্যেক অপেক্ষাকৃত ভালো লোকেদের সঙ্গে আমাদের সংস্পর্শ, আলোচনা এবং সু-সম্পর্ক রাখা প্রয়োজন। এতে করে আমরা সকলের মধ্য হতে ভালো জিনিসটি গ্রহণ করতে পারব। </p>
+
+     <p> অপর দিকে যদি আমরা কারো ছোট্ট একটি ভুলকে কেন্দ্র করে নিজেদের মধ্যে হিংসা এবং শত্রুতাভাবাপন্ন সৃষ্টি করি, তাহলে কখনই ভাল লোকের সমাবেশ সম্ভব হবে না। </p>
+
+    <p> আসুন আমরা নিজেদেরকে গড়ার চেষ্টা করি। আমাদের ব্যক্তিগত জীবনে উদারতা এবং অপরকে সম্মান করতে শিখি। পরস্পরের সহিত সুসম্পর্ক বজায় রাখার মাধ্যমে নিজেদের মধ্যে ভ্রাতৃত্ব গড়ে তোলার চেষ্টা করি। </p><hr />
+
+     <p><strong> তবেই আমরা একটি সুসংগঠিত এবং সুন্দর সমাজ গঠন করতে পারব।</strong></p>
+    </div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+    .bottom-taskbar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 38px;
+        background: linear-gradient(to left, blue, red);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0px 5px 0px 0px;
+        z-index: 10005; /* HIGHER than all popups */
+        border-top: 1px solid #000;
+        box-shadow: 0 -2px 5px -2px #333;
+        backdrop-filter: blur(10px);
+    }
+
+    /* Left (Start Button) */
+    .taskbar-left img {
+        width: 50px;
+        height: 55px;
+        cursor: pointer;
+        transition: 0.4s;
+        padding: 0px 0px 5px 0px;
+        position: relative;
+        z-index: 10006;
+        font-size: 30px;
+        margin-bottom:10px;
+        border-radius: 50%;
+    }
+    .taskbar-left img:hover {
+        filter: Zoom(1.3);
+        transform: scale(1.07);
+        z-index: 10007;
+    }
+   
+    /* Center Icons (Apps) */
+    .taskbar-center {
+        display: flex;
+        gap: 12px;
+        flex-grow: 1;
+        justify-content: left;
+        padding-left: 15px;
+    }
+    
+    .taskbar-center a {
+        font-size: 25px; 
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none; 
+        color: inherit;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        line-height: 1;
+    }
+    .taskbar-center a:hover {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 4px #fff);
+    }
+
+    /* Right (System Tray + Clock) */
+    .taskbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0px;
+        color: #fff;
+    }
+    .taskbar-right o {
+        font-size: 14px;
+        cursor: pointer;
+        padding: 0 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none; 
+    }
+    .taskbar-right o:hover {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 4px #fff);
+    }
+    
+    .taskbar-separator {
+        width: .1px;
+        height: 16px;
+        background-color: gray;
+        margin: 0px;
+    }
+
+    /* ======= Clock ======== */
+    #taskbarClock {
+        text-align: center;
+        line-height: 1.4em;
+        border-radius: 0px;
+        font-size: 7px;
+        color: white;
+        cursor: pointer;
+        padding: 2px 1px;
+    }
+    .taskbarClock :hover {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 4px #fff);
+    }
+
+    /* === START MENU (XP Style) === */
+    .start-menu {
+        position: fixed;
+        bottom: 38px;
+        left: 0px;
+        width: 280px;
+        height: 400px;  
+        background: linear-gradient(to top, #dcdcdc, #f9f9f9);
+        border: 6px solid RoyalBlue;
+        display: none;
+        grid-template-columns: 1fr 1fr;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        z-index: 10000;
+        border-radius: 9px 9px 0 0;
+        overflow: hidden;
+        color: #000;
+        font-size: 14px; 
+        font-weight: 900;
+        line-height: 1.8em;
+    }
+    .start-left {
+        width: 150px;
+        background: #ffffff;
+        padding: 4px;
+        margin-bottom:35px;
+        margin-top: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border-right: 1px solid #ccc;
+        overflow: auto;  
+    }
+    .start-left a {
+        color: black;
+        text-decoration: none;
+        padding: 4px;
+        transition: 0.2s;
+        border-radius: 3px;
+    }
+    .start-left a:hover {
+        background: #0066cc;
+        color: #fff;
+    }
+    .start-search-bar {
+        position: absolute;
+        bottom: 0px;
+        left: 0px; 
+        width: 150px;  
+        height: 40px;  
+        margin-top: auto;
+        padding: 4px 4px 0px 4px;
+        border-top: 1px solid blue;
+        background: linear-gradient(to left, #C1D9FD, #9EBDF5);
+    }
+    .start-search-bar input {
+        width: 100%;
+        padding: 5px; 
+        border: 1px solid #999;
+        border-radius: 3px;
+        box-sizing: border-box;
+    }
+    .start-right {
+        background: linear-gradient(to left, #C1D9FD, #9EBDF5);
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .start-right .profile-img {
+        top: -20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 5px;
+        margin-bottom: 6px;
+        object-fit: cover;
+        border: 1px solid #999;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 35px;
+    }
+    .start-right a {
+        color: red;
+        text-decoration: none;
+        padding: 4px 8px;
+        width: 100%;
+        text-align: left;
+        border-radius: 3px;
+        box-sizing: border-box;
+        display: block;
+    }
+    .start-right a:hover {
+        background: #0066cc;
+        color: #fff;
+    }
+    .home-button-special {
+        background: linear-gradient(to right, #0055ff, #00aaff);
+        color: white !important;  
+    }
+    /* ==Menu Popup === */
+    .menu-popup {
+        position: fixed;
+        bottom: 84px;
+        left: 200px; 
+        width: 110px;
+        background: #f0f0f0;
+        border: 1px solid RoyalBlue;
+        border-radius: 4px;
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        z-index: 10001; 
+        display: none;
+        font-family: Arial, sans-serif;
+        color: #000;
+        line-height: 1.5em;
+    }
+    .menu-popup a {
+        display: block;
+        padding: 5px 10px;
+        text-decoration: none;
+        color: #000;
+        font-weight: 700; 
+        font-size: 13px;
+    }
+    .menu-popup a:hover {
+        background-color: #0066cc;
+        color: white;
+    }
+ .folder {
+        position: fixed;
+        bottom: 84px;
+        left: 20px; 
+        width: 100px;
+        background: #f0f0f0;
+        border: 1px solid RoyalBlue;
+        border-radius: 4px;
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        z-index: 10001; 
+        display: none;
+        font-family: Arial, sans-serif;
+        color: #000;
+        line-height: 1.5em;
+    }
+    .folder a {
+        display: block;
+        padding: 5px 10px;
+        text-decoration: none;
+        color: #000;
+        font-weight: 700; 
+        font-size: 13px;
+    }
+    .folder a:hover {
+        background-color: #0066cc;
+        color: white;
+    }
+
+    /* === Other Popups === */
+    .calendar-popup {
+        position: fixed;
+        bottom: 40px;
+        right: 5px;
+        width: 200px;
+        background: #fff;
+        border: 3px solid #0055ff;
+        border-radius: 6px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        z-index: 10001;
+        display: none;
+        font-family: Arial, sans-serif;
+        color: #000;
+    }
+    .calendar-header {
+        background: linear-gradient(to right, #0055ff, #00aaff);
+        color: #fff;
+        padding: 5px;
+        text-align: center;
+        font-weight: bold;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+    }
+    .calendar-body table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    .calendar-body th, .calendar-body td {
+        text-align: center;
+        padding: 5px;
+        color: green;
+    }
+    .calendar-body th {
+        color: red;
+        font-size: 11px;
+    }
+    .calendar-body td.today {
+        background-color: #0066cc;
+        color: #fff;
+        border-radius: 50%;
+    }
+    .bell-popup {
+        position: fixed;
+        bottom: 45px;
+        background-color: #f0f0f0;
+        border: 2px solid #0055ff;
+        border-radius: 4px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        z-index: 10002;
+        width: 200px;
+        display: none;
+        color: black;
+        font-size: 12px;
+        right: 15px;  
+    }
+    .bell-popup a {
+        display: block;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: #000;
+        border-bottom: 1px solid #ddd;
+    }
+    .bell-popup a:last-child {
+        border-bottom: none;
+    }
+    .bell-popup a:hover {
+        background-color: #0066cc;
+        color: white;
+    }
+    .tools-popup {
+        position: fixed;
+        bottom: 38px;
+        right: 1px;
+        width: 180px;
+        padding: 0px;
+        background: white;
+        border: 3px solid #0055ff;
+        border-radius: 10px 10px 0 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(15px);
+        z-index: 10002;
+        display: none;
+        color: #000;
+        font-family: Segoe UI, sans-serif;
+    }
+    .tools-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 1px;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 0px;
+        background: linear-gradient(to right, #0055ff, #00aaff);
+        color: white;  
+        padding: 5px;
+        border-radius: 5px 5px 0 0;
+    }
+    .tools-popup-header a {
+        font-size: 12px;
+        color: white;
+        text-decoration: none;
+        padding: 0px;
+    }
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 8px;
+    }
+    .grid-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 0;
+        background: linear-gradient(120deg, #E8E8E8, #C4C4C4);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+        text-align: center;
+        font-size: 10px;
+    }
+    .grid-item:hover {
+        background: #d0d0d0;
+        transform: translateY(-2px);
+    }
+    .grid-item .icon {
+        font-size: 16px; /* emoji icon size */
+        margin-bottom: 5px;
+        color: #333;
+    }
+    .grid-item.active {
+        background: linear-gradient(120deg, #0055ff, #00aaff);
+        color: #fff;
+    }
+    .grid-item.active .icon {
+        color: #fff;
+    }
+    .slider-container {
+        width: 90%;
+        margin: 0px 0 6px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+    .slider-container label {
+        font-size: 12px;
+        color: black;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .slider-container label i {
+        font-size: 14px;
+        margin-right: 5px;
+    }
+    .slider-container input[type="range"] {
+        width: 100%;
+        -webkit-appearance: none;
+        height: 5px;
+        background: #ddd;
+        border-radius: 5px;
+        outline: none;
+        transition: opacity .2s;
+    }
+    .slider-container input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        background: #0078d4;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+
+    /* ===APP WINDOW STYLES === */
+    .app-window {
+    position: fixed;
+    top: 15%;  
+    left: 5%;
+    width: 90%;
+    height: 70%;
+    background: #f0f0f0;
+    border: 4px solid transparent; /* make border transparent */
+    border-radius: 5px;
+    background-image: 
+   linear-gradient(#f0f0f0, #f0f0f0),
+   linear-gradient(to right, #0055ff, #00aaff); 
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.4);
+    z-index: 1999999999999999999999999999999999999;  
+    display: none;
+    resize: both;  
+    overflow: hidden;
+    min-width: 200px;
+    min-height: 400px;
+    font-family: Arial, sans-serif;
+    box-sizing: border-box; 
+    transition: top 0.3s, left 0.3s, width 0.3s, height 0.3s, border 0.3s, border-radius 0.3s;
+    margin-bottom: 0px;
+}
+
+    .window-header {
+        background: linear-gradient(to right, #0055ff, #00aaff);
+        color: white;
+        padding: 5px 8px;
+        cursor: move;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 25px;
+        font-size: 16px;
+        font-weight: bold;
+        user-select: none;
+    }
+
+    .window-controls button {
+        background: #d4d4d4;
+        border: 1px solid #777;
+        color: #000;
+        margin-left: 3px;
+        padding: 0 8px;
+        height: 20px;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 10px;
+        border-radius: 2px;
+        transition: background 0.1s;
+    }
+    .window-controls button:hover {
+        background: #fff;
+    }
+    .window-controls .close-btn {
+        background: red;
+        color: white;
+        border-color: darkred;
+    }
+    .window-controls .close-btn:hover {
+        background: darkred;
+    }
+    
+    /* Maximize State Styles */
+    .app-window.maximized {
+        top: 45px !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: calc(100vh - 38px) !important;
+        transform: translate3d(0, 0, 0) !important; 
+        border: none;
+        border-radius: 0;
+    }
+
+    .window-body {
+        padding: 10px;
+        overflow: auto;
+        margin-bottom: 5px;
+        height: calc(100% - 35px);
+        color: #333;
+        font-size: 14px; 
+        line-height: 1.8;
+       
+    }
+    .window-body h3 {
+        color: #0055ff; 
+        font-size: 17px;
+        text-align: center;
+    }
+    .window-body h2 {
+        color: #FD1007;
+        font-size: 16px;
+        text-align: center;
+    }
+  .window-body strong {
+        color: red;
+    }
+@media print {
+    .menu-container { display: none; }
+    button, .store-btn, .bottom-taskbar { display: none; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // =================== Clock ===================
+    function updateTaskbarClock() {
+        const now = new Date();
+        let h = now.getHours();
+        let m = now.getMinutes();
+        let s = now.getSeconds();
+        h = h < 10 ? "0"+h : h;
+        m = m < 10 ? "0"+m : m;
+        s = s < 10 ? "0"+s : s;
+        const time = `${h}:${m}:${s}`;
+        const day = now.getDate() < 10 ? "0"+now.getDate() : now.getDate();
+        const month = (now.getMonth()+1) < 10 ? "0"+(now.getMonth()+1) : (now.getMonth()+1);
+        const year = now.getFullYear().toString().slice(-2);
+        const date = `${day}/${month}/${year}`;
+        const clockEl = document.getElementById("taskbarClock");
+        if (clockEl) {
+            clockEl.innerHTML = time + "<br>" + date;
+        }
+    }
+    setInterval(updateTaskbarClock, 1000);
+    updateTaskbarClock();
+
+    // =================== Element Grabbing ===================
+    const startBtn = document.getElementById("startBtn");
+    const startMenu = document.getElementById("startMenu");
+    const clockEl = document.getElementById("taskbarClock");
+    const calendarPopup = document.getElementById("calendarPopup");
+    const bellIcon = document.getElementById("bellIcon");
+    const bellPopup = document.getElementById("bellPopup");
+    const toolsIcon = document.getElementById("toolsIcon");
+    const toolsPopup = document.getElementById("toolsPopup");
+    const startSearchInput = document.getElementById('startSearchInput');
+    const appIcons = document.querySelectorAll('.taskbar-center a'); // Grab all app icons
+    const appWindows = document.querySelectorAll('.app-window'); // Grab all app windows
+    // NEW ELEMENT GRABBING
+    const menuPopupToggle = document.getElementById("menuPopupToggle");
+    const menuPopup = document.getElementById("menuPopup");
+
+    // Store the original state (position/size) for each window
+    const originalStates = new Map();
+
+    // Close all popups function (Excludes App Windows)
+    function closeAllPopups() {
+        startMenu.style.display = "none";
+        calendarPopup.style.display = "none";
+        bellPopup.style.display = "none";
+        if (toolsPopup) { toolsPopup.style.display = "none"; }
+        // NEW POPUP CLOSE
+        if (menuPopup) { menuPopup.style.display = "none"; }
+    }
+
+    // Function to bring a window to the front (highest z-index)
+    function bringToFront(windowElement) {
+        let maxZ = 0;
+        appWindows.forEach(win => {
+            // Ignore popups (which are higher) and windows that are currently closed
+            if (parseInt(win.style.zIndex) < 10000 && win.style.display !== 'none') {
+                const currentZ = parseInt(win.style.zIndex) || 0;
+                if (currentZ > maxZ) {
+                    maxZ = currentZ;
+                }
+            }
+        });
+        // Set the clicked window's z-index one higher than the max found, or default to 9999
+        windowElement.style.zIndex = Math.max(maxZ + 1, 9999);
+    }
+    
+    // =================== Maximize Function ===================
+    window.maximizeWindow = function(button) {
+        const windowEl = button.closest('.app-window');
+        if (!windowEl) return;
+
+        // Check if maximized
+        const isMaximized = windowEl.classList.contains('maximized');
+
+        if (isMaximized) {
+            // RESTORE to original state
+            windowEl.classList.remove('maximized');
+            windowEl.style.resize = 'both'; // Enable resize
+            windowEl.querySelector('.maximize-btn').innerHTML = '☐'; // Change button icon
+
+            const savedState = originalStates.get(windowEl.id);
+            if (savedState) {
+                windowEl.style.top = savedState.top;
+                windowEl.style.left = savedState.left;
+                windowEl.style.width = savedState.width;
+                windowEl.style.height = savedState.height;
+                windowEl.style.transform = savedState.transform;
+            }
+        } else {
+            // MAXIMIZE
+            bringToFront(windowEl); // Bring to front before maximizing
+            
+            // Save current state (top, left, width, height, transform)
+            originalStates.set(windowEl.id, {
+                top: windowEl.style.top,
+                left: windowEl.style.left,
+                width: windowEl.style.width,
+                height: windowEl.style.height,
+                transform: windowEl.style.transform // Save current drag offset
+            });
+
+            windowEl.classList.add('maximized');
+            windowEl.style.resize = 'none'; // Disable resize while maximized
+            windowEl.querySelector('.maximize-btn').innerHTML = '❐'; // Change button icon (optional)
+        }
+    };
+
+    // =================== App Window Functionality ===================
+    appIcons.forEach(icon => {
+        icon.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeAllPopups(); // Close other menus
+            
+            const targetId = icon.getAttribute('data-target');
+            const targetWindow = document.getElementById(targetId);
+
+            if (targetWindow) {
+                targetWindow.style.display = "block";
+                bringToFront(targetWindow); // Bring the window to the front
+            }
+        });
+    });
+
+    // Add click listener to all windows to bring them to front
+    appWindows.forEach(windowEl => {
+        windowEl.addEventListener('mousedown', () => {
+            bringToFront(windowEl);
+        });
+    });
+
+
+    // --- Draggable Functionality ---
+    appWindows.forEach(windowEl => {
+        const headerEl = windowEl.querySelector('.window-header');
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        
+        // Function to get the current transform offset
+        function getTransformOffset(element) {
+            const style = window.getComputedStyle(element);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            return { x: matrix.m41, y: matrix.m42 };
+        }
+
+        if (headerEl) {
+            headerEl.addEventListener("mousedown", dragStart);
+            document.addEventListener("mouseup", dragEnd);
+            document.addEventListener("mousemove", drag);
+            // Also allow double-click on header to maximize/restore
+            headerEl.addEventListener("dblclick", (e) => {
+                const maximizeBtn = windowEl.querySelector('.maximize-btn');
+                if (maximizeBtn && !e.target.closest('.window-controls')) {
+                    window.maximizeWindow(maximizeBtn);
+                }
+            });
+        }
+
+        function dragStart(e) {
+            // Prevent drag if window is maximized or if clicking on controls
+            if (windowEl.classList.contains('maximized') || e.target.closest('.window-controls')) return;
+            
+            // Get current offset from style.transform
+            const offset = getTransformOffset(windowEl);
+            xOffset = offset.x;
+            yOffset = offset.y;
+
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            
+            isDragging = true;
+            windowEl.style.cursor = 'grabbing';
+            bringToFront(windowEl); // Bring to front on drag start
+        }
+
+        function dragEnd(e) {
+            if (!isDragging) return;
+            
+            // Update the current offset based on the final dragged position
+            const offset = getTransformOffset(windowEl);
+            xOffset = offset.x;
+            yOffset = offset.y;
+            
+            isDragging = false;
+            windowEl.style.cursor = 'default';
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+            
+            // Apply the transform (relative to the initial CSS position)
+            windowEl.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+        }
+
+        // Initialize transform for dragging calculation if not already set
+        if (!windowEl.style.transform) {
+            windowEl.style.transform = "translate3d(0px, 0px, 0)";
+        }
+
+    });
+    // -------------------------------
+    
+    // =================== Start Menu Toggle ===================
+    if (startBtn && startMenu) {
+        startBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isVisible = startMenu.style.display === "grid";
+            closeAllPopups();
+            if (!isVisible) {
+                startMenu.style.display = "grid";
+            }
+        });
+    }
+    
+    // =================== Menu Popup Toggle (NEW) ===================
+    if (menuPopupToggle && menuPopup && startMenu) {
+        // Note: Clicks on the start menu should not close the menu popup.
+        menuPopupToggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isVisible = menuPopup.style.display === "block";
+            
+            // Close other non-start-menu popups
+            calendarPopup.style.display = "none";
+            bellPopup.style.display = "none";
+            if (toolsPopup) { toolsPopup.style.display = "none"; }
+
+            if (!isVisible) {
+                menuPopup.style.display = "block";
+            } else {
+                menuPopup.style.display = "none";
+            }
+        });
+    }
+
+    // =================== Calendar Toggle ===================
+    if (clockEl && calendarPopup) {
+        clockEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isVisible = calendarPopup.style.display === "block";
+            closeAllPopups();
+            if (!isVisible) {
+                calendarPopup.style.display = "block";
+                generateCalendar();
+            }
+        });
+    }
+    
+    // =================== Bell Popup Toggle ===================
+    if (bellIcon && bellPopup) {
+        bellIcon.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isVisible = bellPopup.style.display === "block";
+            closeAllPopups();
+            if (!isVisible) {
+                bellPopup.style.display = "block";
+            }
+        });
+    }
+    
+    // =================== Tools Popup Toggle ===================
+    if (toolsIcon && toolsPopup) {
+        toolsIcon.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isVisible = toolsPopup.style.display === "block";
+            closeAllPopups();
+            if (!isVisible) {
+                toolsPopup.style.display = "block";
+            }
+        });
+    }
+    
+    // =================== Click Outside to Close All ===================
+    document.addEventListener("click", (e) => {
+        
+        // Close main popups
+        if (!startMenu.contains(e.target) && !startBtn.contains(e.target)) {
+             startMenu.style.display = "none";
+             // Ensure new menu popup closes when start menu closes from outside click
+             if (menuPopup) { menuPopup.style.display = "none"; } 
+        }
+        if (!calendarPopup.contains(e.target) && !clockEl.contains(e.target)) {
+             calendarPopup.style.display = "none";
+        }
+        if (!bellPopup.contains(e.target) && !bellIcon.contains(e.target)) {
+             bellPopup.style.display = "none";
+        }
+        if (toolsPopup && !toolsPopup.contains(e.target) && !toolsIcon.contains(e.target)) {
+             toolsPopup.style.display = "none";
+        }
+        // Close menu popup if the click is outside BOTH the start menu and the menu popup itself
+        if (menuPopup && startMenu.style.display === "grid" && !menuPopup.contains(e.target) && !menuPopupToggle.contains(e.target)) {
+             menuPopup.style.display = "none";
+        }
+    });
+
+    // =================== Start Menu Search Function (Kept as is) ===================
+    if (startSearchInput) {
+        startSearchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const query = startSearchInput.value.trim();
+                if (query) {
+                    const searchURL = `https://rmrobiur.blogspot.com/search?q=${encodeURIComponent(query)}`;
+                    window.open(searchURL, '_blank');
+                    startSearchInput.value = '';
+                    startMenu.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // =================== Calendar Generation Function ===================
+    function generateCalendar() {
+        const header = document.getElementById('calendarHeader');
+        const body = document.getElementById('calendarBody');
+        const now = new Date();
+        const month = now.getMonth();
+        const year = now.getFullYear();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        header.innerHTML = `${monthNames[month]} ${year}`;
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let tableHTML = '<table>';
+        tableHTML += '<tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr>';
+        let date = 1;
+        for (let i = 0; i < 6; i++) { // Loop for weeks
+            tableHTML += '<tr>';
+            for (let j = 0; j < 7; j++) { // Loop for days
+                if (i === 0 && j < firstDay) {
+                    tableHTML += '<td></td>';
+                } else if (date > daysInMonth) {
+                    tableHTML += '<td></td>';
+                } else {
+                    let className = (date === now.getDate() && month === now.getMonth() && year === now.getFullYear()) ? 'today' : '';
+                    tableHTML += `<td class="${className}">${date}</td>`;
+                    date++;
+                }
+            }
+            tableHTML += '</tr>';
+            if (date > daysInMonth) {
+                break;
+            }
+        }
+        tableHTML += '</table>';
+        body.innerHTML = tableHTML;
+    }
+    
+    // Dummy function for onclick="opennavv()" used in HTML
+    window.opennavv = function() {
+        // The actual logic is handled by event listeners in the main DOMContentLoaded function
+        // This is a placeholder to prevent errors from the inline attribute.
+    };
+    
+    // Initial call to generate calendar
+    if (document.readyState === 'complete') {
+        generateCalendar();
+    } else {
+        window.addEventListener('load', generateCalendar);
+    }
+});
+</script>
+
+</html>
